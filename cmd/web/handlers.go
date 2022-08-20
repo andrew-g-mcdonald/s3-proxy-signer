@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
+
+const presignDuration = 60 * time.Minute
 
 func base(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -52,9 +55,9 @@ func base(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//
+	// Create Presign client and generate the URL with expiry
 	presignClient := s3.NewPresignClient(client)
-	presignObject, err := presignClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{Bucket: &bucket, Key: &key})
+	presignObject, err := presignClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{Bucket: &bucket, Key: &key}, s3.WithPresignExpires(presignDuration))
 	if err != nil {
 		fmt.Println("Error signing")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
